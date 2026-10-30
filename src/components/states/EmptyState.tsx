@@ -11,20 +11,31 @@ import { Inbox } from "lucide-react";
 import type { ReactNode } from "react";
 
 export function EmptyState({
-  icon: Icon = Inbox,
+  icon: Icon,
   title,
   description,
   action,
 }: {
-  icon?: LucideIcon;
+  icon?: LucideIcon | ReactNode;
   title: string;
   description?: string;
   action?: ReactNode;
 }) {
+  // Determine if icon is a component reference (has $$typeof) or a React element
+  const isLucideIcon = Icon && typeof Icon === 'function' && !('$$typeof' in Icon);
+
   return (
     <div className="flex flex-col items-center justify-center rounded-lg border border-dashed px-6 py-14 text-center">
       <div className="mb-4 flex size-12 items-center justify-center rounded-full bg-muted">
-        <Icon className="size-6 text-muted-foreground" />
+        {isLucideIcon ? (
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (Icon as LucideIcon)({ className: "size-6 text-muted-foreground" } as any)
+        ) : (
+          // It's a React element (SVG component)
+          <div className="flex size-12 items-center justify-center text-muted-foreground">
+            {Icon as ReactNode}
+          </div>
+        )}
       </div>
       <h3 className="text-lg font-semibold">{title}</h3>
       {description ? (

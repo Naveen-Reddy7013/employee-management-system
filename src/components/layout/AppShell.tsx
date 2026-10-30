@@ -1,187 +1,267 @@
 /**
- * The frame of the whole app. Three layouts, chosen with the `layout` prop:
+ * EMS AppShell – sidebar navigation with role-based menu items, user profile dropdown,
+ * and light/dark theme toggle.
  *
- *   "sidebar"  a side menu with the app's pages, and a top bar with a button that
- *              opens the menu on small screens. For apps with several screens.
- *   "topbar"   the pages as links along the top. For a few screens and wide content.
- *   "focused"  one centered column and no menu. For a single-purpose tool or form.
- *
- * Use the layout named in the approved blueprint. With none named, use "sidebar".
- * Use AppShell ONCE, in src/App.tsx, around the routes:
- *
- *   <AppShell layout="sidebar" appName="Consultant Hub" nav={[
- *     { label: "Dashboard", href: "/", icon: LayoutDashboard },
- *     { label: "Consultants", href: "/consultants", icon: Users },
- *   ]}>
+ * Usage:
+ *   <AppShell>
  *     <Routes>...</Routes>
  *   </AppShell>
- *
- * Every page inside it starts with <PageHeader> inside <PageContainer>. Add a page
- * by adding one entry to `nav` and one <Route>. Icons come from "@/lib/icons".
- * `nav` is not used by "focused".
  */
-import type { ReactNode } from "react";
-import { Link, useLocation } from "react-router-dom";
-import type { LucideIcon } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Link, useLocation, Outlet, useNavigate } from "react-router-dom";
+import {
+  LayoutDashboard, Users, Building2, CalendarCheck, Clock,
+  CreditCard, BarChart3, Bell, Settings, Menu, X,
+  LogOut, ChevronDown, Sun, Moon, User,
+} from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Separator } from "@/components/ui/separator";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import {
-  Sidebar,
-  SidebarContent,
-  SidebarFooter,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarHeader,
-  SidebarInset,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarProvider,
-  SidebarTrigger,
-} from "@/components/ui/sidebar";
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useAuth } from "@/contexts/AuthContext";
+import { getNavigationForRole, type NavItem } from "@/utils/helpers";
 
-export interface NavItem {
-  label: string;
-  href: string;
-  icon: LucideIcon;
-}
-
-export type AppLayout = "sidebar" | "topbar" | "focused";
-
-interface ShellProps {
-  appName: string;
-  /** A small mark beside the name, such as <img src="/logo.svg" className="size-6" />. */
-  logo?: ReactNode;
-  nav?: NavItem[];
-  /** Shown at the bottom of the sidebar ("sidebar" only), such as the signed-in user. */
-  footer?: ReactNode;
-  /** Shown at the right of the top bar, such as a search box or an account menu. */
-  topBar?: ReactNode;
-  children: ReactNode;
-}
-
-export function AppShell({
-  layout = "sidebar",
-  ...props
-}: ShellProps & { layout?: AppLayout }) {
-  if (layout === "topbar") return <TopBarLayout {...props} />;
-  if (layout === "focused") return <FocusedLayout {...props} />;
-  return <SidebarLayout {...props} />;
-}
-
-function useActive() {
-  const { pathname } = useLocation();
-  return (href: string) =>
-    href === "/"
-      ? pathname === "/"
-      : pathname === href || pathname.startsWith(`${href}/`);
-}
-
-function SidebarLayout({
-  appName,
-  logo,
-  nav = [],
-  footer,
-  topBar,
-  children,
-}: ShellProps) {
-  const isActive = useActive();
+// Brand logo component
+function BrandLogo({ className }: { className?: string }) {
   return (
-    <SidebarProvider>
-      <Sidebar>
-        <SidebarHeader className="px-4 py-4">
-          <div className="flex items-center gap-2 font-semibold">
-            {logo}
-            <span className="truncate">{appName}</span>
-          </div>
-        </SidebarHeader>
-        <SidebarContent>
-          <SidebarGroup>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {nav.map((item) => (
-                  <SidebarMenuItem key={item.href}>
-                    <SidebarMenuButton asChild isActive={isActive(item.href)}>
-                      <Link to={item.href}>
-                        <item.icon />
-                        <span>{item.label}</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        </SidebarContent>
-        {footer ? <SidebarFooter>{footer}</SidebarFooter> : null}
-      </Sidebar>
-      <SidebarInset>
-        <header className="sticky top-0 z-10 flex h-14 items-center gap-2 border-b bg-background/80 px-4 backdrop-blur">
-          <SidebarTrigger />
-          <Separator orientation="vertical" className="h-5" />
-          <div className="ml-auto flex items-center gap-2">{topBar}</div>
-        </header>
-        {children}
-      </SidebarInset>
-    </SidebarProvider>
+    <svg viewBox="0 0 24 24" className={cn("size-6 text-[#31439b]", className)} fill="currentColor">
+      {/* Geometric mark: stylized person icon inside a rounded shield */}
+      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z" fillOpacity="0.12" />
+      <circle cx="12" cy="8" r="2.5" />
+      <path d="M6.5 19.5c0-3 2.5-5 5.5-5s5.5 2 5.5 5" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
   );
 }
 
-function TopBarLayout({
-  appName,
-  logo,
-  nav = [],
-  topBar,
-  children,
-}: ShellProps) {
-  const isActive = useActive();
-  const links = nav.map((item) => (
-    <Link
-      key={item.href}
-      to={item.href}
-      className={cn(
-        "inline-flex shrink-0 items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground",
-        isActive(item.href) && "bg-accent text-accent-foreground",
+// Map nav items to their icon components
+const iconMap: Record<string, typeof LayoutDashboard> = {
+  Dashboard: LayoutDashboard,
+  Employees: Users,
+  Departments: Building2,
+  Attendance: CalendarCheck,
+  Leave: Clock,
+  Payroll: CreditCard,
+  Reports: BarChart3,
+  Notifications: Bell,
+  Settings: Settings,
+};
+
+export default function AppShell() {
+  const { user, logout } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [darkMode, setDarkMode] = useState(() => localStorage.getItem('ems_theme') === 'dark');
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  // Apply dark mode class
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', darkMode);
+    localStorage.setItem('ems_theme', darkMode ? 'dark' : 'light');
+  }, [darkMode]);
+
+  // Build navigation based on role
+  const navItems: NavItem[] = user ? getNavigationForRole(user.role) : [];
+
+  const isActive = (href: string) =>
+    href === "/dashboard"
+      ? location.pathname === "/dashboard"
+      : location.pathname === href || location.pathname.startsWith(`${href}/`);
+
+  // Handle logout
+  const handleLogout = async () => {
+    await logout();
+    navigate('/login');
+  };
+
+  // Generate avatar initials
+  const getInitials = (name: string) =>
+    name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2);
+
+  // Role label
+  const roleLabel = user?.role?.charAt(0).toUpperCase() + user?.role?.slice(1) || '';
+
+  return (
+    <div className={cn("min-h-screen bg-background transition-colors", darkMode ? 'dark' : '')}>
+      {/* Mobile sidebar overlay */}
+      {mobileOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/50 lg:hidden"
+          onClick={() => setMobileOpen(false)}
+        />
       )}
-    >
-      <item.icon className="size-4" />
-      {item.label}
-    </Link>
-  ));
-  return (
-    <div className="min-h-svh bg-background">
-      <header className="sticky top-0 z-10 border-b bg-background/80 backdrop-blur">
-        <div className="mx-auto flex h-14 w-full max-w-6xl items-center gap-6 px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-2 font-semibold">
-            {logo}
-            <span className="truncate">{appName}</span>
-          </div>
-          <nav className="hidden items-center gap-1 md:flex">{links}</nav>
-          <div className="ml-auto flex items-center gap-2">{topBar}</div>
-        </div>
-        <nav className="flex gap-1 overflow-x-auto px-4 pb-2 md:hidden">
-          {links}
-        </nav>
-      </header>
-      <main>{children}</main>
-    </div>
-  );
-}
 
-function FocusedLayout({ appName, logo, topBar, children }: ShellProps) {
-  return (
-    <div className="min-h-svh bg-background">
-      <header className="border-b">
-        <div className="mx-auto flex h-14 w-full max-w-3xl items-center justify-between gap-4 px-4 sm:px-6">
-          <div className="flex items-center gap-2 font-semibold">
-            {logo}
-            <span className="truncate">{appName}</span>
-          </div>
-          <div className="flex items-center gap-2">{topBar}</div>
+      {/* Mobile sidebar */}
+      <div className={cn(
+        "fixed inset-y-0 left-0 z-50 w-64 transform border-r bg-background transition-transform lg:hidden",
+        mobileOpen ? "translate-x-0" : "-translate-x-full"
+      )}>
+        <div className="flex h-14 items-center border-b px-4">
+          <BrandLogo />
+          <span className="ml-2 font-semibold">EMS</span>
+          <Button variant="ghost" size="icon" className="ml-auto" onClick={() => setMobileOpen(false)}>
+            <X className="size-5" />
+          </Button>
         </div>
-      </header>
-      <main className="mx-auto w-full max-w-3xl">{children}</main>
+        <nav className="space-y-1 px-3 py-4">
+          {navItems.map((item) => {
+            const Icon = iconMap[item.title] || LayoutDashboard;
+            return (
+              <Link
+                key={item.href}
+                to={item.href}
+                onClick={() => setMobileOpen(false)}
+                className={cn(
+                  "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+                  isActive(item.href)
+                    ? "bg-[#31439b]/10 text-[#31439b] dark:bg-[#31439b]/20 dark:text-blue-400"
+                    : "text-muted-foreground hover:bg-accent hover:text-foreground"
+                )}
+              >
+                <Icon className="size-5" />
+                {item.title}
+              </Link>
+            );
+          })}
+        </nav>
+      </div>
+
+      {/* Desktop sidebar */}
+      <aside className={cn(
+        "fixed inset-y-0 left-0 z-30 hidden w-64 border-r bg-background transition-all lg:block",
+        sidebarOpen ? "translate-x-0" : "-translate-x-full"
+      )}>
+        {/* Logo */}
+        <div className="flex h-14 items-center border-b px-4">
+          <BrandLogo />
+          <span className="ml-2 font-semibold text-lg">Employee Management</span>
+        </div>
+
+        {/* Navigation */}
+        <nav className="space-y-1 px-3 py-4">
+          {navItems.map((item) => {
+            const Icon = iconMap[item.title] || LayoutDashboard;
+            return (
+              <Link
+                key={item.href}
+                to={item.href}
+                className={cn(
+                  "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+                  isActive(item.href)
+                    ? "bg-[#31439b]/10 text-[#31439b] dark:bg-[#31439b]/20 dark:text-blue-400"
+                    : "text-muted-foreground hover:bg-accent hover:text-foreground"
+                )}
+              >
+                <Icon className="size-5" />
+                {item.title}
+              </Link>
+            );
+          })}
+        </nav>
+      </aside>
+
+      {/* Main content area */}
+      <div className={cn(
+        "min-h-screen transition-all lg:ml-64",
+        sidebarOpen ? "lg:ml-64" : "lg:ml-0"
+      )}>
+        {/* Top bar */}
+        <header className="sticky top-0 z-20 flex h-14 items-center justify-between border-b bg-background/80 px-4 backdrop-blur">
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="hidden lg:flex"
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+            >
+              <Menu className="size-5" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="lg:hidden"
+              onClick={() => setMobileOpen(true)}
+            >
+              <Menu className="size-5" />
+            </Button>
+            <Separator orientation="vertical" className="h-5" />
+            <h1 className="text-sm font-semibold capitalize">
+              {location.pathname === '/' || location.pathname === '/dashboard' ? 'Dashboard'
+                : location.pathname.split('/').pop()?.replace(/-/g, ' ')}
+            </h1>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {/* Theme toggle */}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setDarkMode(!darkMode)}
+              title={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+            >
+              {darkMode ? <Sun className="size-5" /> : <Moon className="size-5" />}
+            </Button>
+
+            {/* Notifications */}
+            <Link to="/notifications">
+              <Button variant="ghost" size="icon" className="relative">
+                <Bell className="size-5" />
+                <Badge className="absolute -right-1 -top-1 size-4 p-0 text-[10px] lg:flex hidden">3</Badge>
+              </Button>
+            </Link>
+
+            {/* User menu */}
+            {user && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="flex items-center gap-2 rounded-full px-3 py-1.5">
+                    <Avatar className="size-7">
+                      <AvatarFallback className="bg-[#31439b] text-xs text-white">
+                        {getInitials(user.full_name)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="hidden text-sm font-medium md:inline-block">{user.full_name}</span>
+                    <ChevronDown className="size-4 text-muted-foreground" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel>
+                    <div className="flex flex-col">
+                      <span className="font-medium">{user.full_name}</span>
+                      <span className="text-xs text-muted-foreground">{user.role}</span>
+                    </div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => navigate('/settings')}>
+                    <User className="mr-2 size-4" />
+                    Settings
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleLogout}>
+                    <LogOut className="mr-2 size-4" />
+                    Log out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+          </div>
+        </header>
+
+        {/* Page content */}
+        <main className="p-4 lg:p-6">
+          <Outlet />
+        </main>
+      </div>
     </div>
   );
 }

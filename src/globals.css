@@ -4,7 +4,7 @@
 
 @layer base {
   :root {
-    /* The app is light only: keeps form controls and scrollbars light on a dark operating system. */
+    /* Light mode - default */
     color-scheme: light;
 
     --background: 0 0% 100%;
@@ -16,7 +16,7 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
 
-    --primary: 222.2 47.4% 11.2%;
+    --primary: 224 48% 38%;
     --primary-foreground: 210 40% 98%;
 
     --secondary: 210 40% 96.1%;
@@ -33,7 +33,7 @@
 
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --ring: 224 48% 38%;
 
     --radius: 0.5rem;
 
@@ -41,7 +41,7 @@
 
     --sidebar-foreground: 240 5.3% 26.1%;
 
-    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary: 224 48% 38%;
 
     --sidebar-primary-foreground: 0 0% 98%;
 
@@ -53,6 +53,55 @@
 
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
+
+  .dark {
+    /* Dark mode */
+    color-scheme: dark;
+
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+
+    --card: 222.2 84% 6.9%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 224 48% 55%;
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 62.8% 50.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 224 48% 65%;
+
+    --sidebar-background: 222.2 84% 6.9%;
+
+    --sidebar-foreground: 210 40% 98%;
+
+    --sidebar-primary: 224 48% 65%;
+
+    --sidebar-primary-foreground: 0 0% 100%;
+
+    --sidebar-accent: 217.2 32.6% 17.5%;
+
+    --sidebar-accent-foreground: 210 40% 98%;
+
+    --sidebar-border: 217.2 32.6% 17.5%;
+
+    --sidebar-ring: 224 48% 65%;
+  }
 }
 
 @layer base {
@@ -62,7 +111,6 @@
 
   body {
     @apply bg-background text-foreground;
-    /* A theme sets --font-sans; without one the page keeps the system font. */
     font-family: var(--font-sans, ui-sans-serif, system-ui, sans-serif);
   }
 }

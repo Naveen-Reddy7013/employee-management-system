@@ -30,3 +30,7 @@ export function PageContainer({
     </div>
   );
 }
+
+// Re-export PageHeader and Section for convenient imports
+export { PageHeader } from "./PageHeader";
+export { Section } from "./Section";
